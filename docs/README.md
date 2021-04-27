@@ -8,7 +8,7 @@ Originally meant for utilization by the ARG group of the University of Luxembour
 
 Install [Rocker](https://github.com/osrf/rocker):
 
-```
+```bash
 sudo apt install python3 && python3-rocker
 ```
 
@@ -16,7 +16,7 @@ sudo apt install python3 && python3-rocker
 
 In order to build the image, run:
 
-```
+```bash
 docker build -t rosbox:latest .
 ```
 
@@ -28,7 +28,7 @@ Note that this can take some time.
 
 Run the Rosbox container from within your project root directory:
 
-```
+```bash
 docker run --rm -ti \
     --name rosbox-1 \
     --hostname rosbox \
