@@ -44,17 +44,22 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install dependencies
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install wget && \
+    apt-get install -y wget && \
     apt-get install -y git && \
     apt-get install -y curl && \
     apt-get install -y sudo && \
+    apt-get install -y libtool && \
     apt-get install -y python3 && \
     apt-get install -y virtualenv && \
     apt-get install -y supervisor && \
     apt-get install -y python3-pip && \
     apt-get install -y python3-wstool && \
-    apt-get install python3-catkin-tools && \
-    apt-get install nano
+    apt-get install -y python3-catkin-tools && \
+    apt-get install -y nano
+
+RUN curl -s https://packagecloud.io/install/repositories/dirk-thomas/vcstool/script.deb.sh | sudo bash && \
+    apt-get update && \
+    apt-get install python3-vcstool
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y curl ca-certificates fluxbox eterm xterm xfonts-base xauth x11-xkb-utils xkb-data python3-dbus dbus-x11 && \
@@ -66,7 +71,7 @@ COPY --from=novnc /novnc /opt/novnc
 COPY .rosbox/xserver/index.html /opt/novnc
 
 # Python modules
-RUN pip3 install --upgrade --ignore-installed --no-cache-dir vcstools supervisor supervisor_twiddler argcomplete
+RUN pip3 install --upgrade --ignore-installed --no-cache-dir supervisor supervisor_twiddler argcomplete osrf-pycommon
 
 # Node
 RUN curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - && \
@@ -148,9 +153,11 @@ USER ${USERNAME}
 # Source ROS installation
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
 
+RUN rosdep update
+
 VOLUME /tmp/.X11-unix
 
-EXPOSE 3000 8888 9001 9876 8080
+EXPOSE 3000 8888 9001 9876 8080 11301
 
 ENTRYPOINT [ "/.entrypoint.sh" ]
 CMD [ "sudo", "-E", "/usr/local/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

@@ -20,6 +20,10 @@ In order to build the image, run:
 docker build -t rosbox:latest .
 ```
 
+This only needs to be performed once. After the image is built, it will be available within the local Docker registry.
+
+Note that this can take some time.
+
 ## Boxing a ROS workspace
 
 Run the Rosbox container from within your project root directory:
@@ -28,13 +32,14 @@ Run the Rosbox container from within your project root directory:
 docker run --rm -ti \
     --name rosbox-1 \
     --hostname rosbox \
-    -v /tmp/.x11-unix \
     -p 8080:8080 \
     -p 3000:3000 \
     -p 9001:9001 \
     -p 9876:9876 \
     -p 11301:11301 \
-    -v $(pwd)/src:/home/rosbox/workspace \
+    -v /tmp/.x11-unix \
+    -v ~/.ssh:/home/rosbox/.ssh:ro \
+    -v $(pwd):/home/rosbox/workspace \
     rosbox
 ```
 
