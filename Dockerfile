@@ -23,6 +23,8 @@ RUN mkdir -p /opt/xsd/sdf && \
 RUN mkdir -p /opt/xsd/urdf && \
     java -jar schema-fetcher/target/schema-fetcher-1.0.0-SNAPSHOT.jar /opt/xsd/urdf https://raw.githubusercontent.com/devrt/urdfdom/xsd-with-xacro/xsd/urdf.xsd
 
+# ----------------------------------------------------------
+
 FROM node:12 AS novnc
 
 RUN git clone https://github.com/noVNC/noVNC.git /novnc
@@ -31,41 +33,53 @@ RUN cd /novnc && \
     npm install && \
     ./utils/use_require.js --clean
 
+# ----------------------------------------------------------
+
 FROM osrf/ros:noetic-desktop-full
 
 LABEL maintainer="eduardo.schmidt@uni.lu"
 
 SHELL ["/bin/bash", "-c"]
 
-ENV DISPLAY ":0"
+ENV DISPLAY ":2"
 ENV USERNAME rosbox
 ENV DEBIAN_FRONTEND noninteractive
 
-# Install dependencies
+# See https://answers.ros.org/question/379190/apt-update-signatures-were-invalid-f42ed6fbab17c654/
+RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+
+# Install apt packages
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y wget && \
+    apt-get install -y vim && \
     apt-get install -y git && \
+    apt-get install -y nano && \
     apt-get install -y curl && \
+    apt-get install -y wget && \
     apt-get install -y sudo && \
     apt-get install -y libtool && \
     apt-get install -y python3 && \
     apt-get install -y virtualenv && \
     apt-get install -y supervisor && \
-    apt-get install -y python3-pip && \
+    apt-get install -y python3-pip && \ 
+    apt-get install -y iputils-ping && \ 
     apt-get install -y python3-wstool && \
-    apt-get install -y python3-catkin-tools && \
-    apt-get install -y nano
+    apt-get install -y python3-catkin-tools
 
+# Install vcstool
 RUN curl -s https://packagecloud.io/install/repositories/dirk-thomas/vcstool/script.deb.sh | sudo bash && \
     apt-get update && \
     apt-get install python3-vcstool
 
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y curl ca-certificates fluxbox eterm xterm xfonts-base xauth x11-xkb-utils xkb-data python3-dbus dbus-x11 && \
-    curl -L https://bintray.com/tigervnc/stable/download_file?file_path=tigervnc-1.10.1.x86_64.tar.gz | tar xz --strip 1 -C / && \
-    pip3 install -U setuptools wheel && \
+# Install Python modules
+RUN pip3 install -U setuptools wheel && \
     pip3 install -U websockify
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y curl ca-certificates fluxbox eterm xterm xfonts-base xauth x11-xkb-utils xkb-data python3-dbus dbus-x11
+
+# Get TigerVNC
+RUN cd / && wget -q -O - https://sourceforge.net/projects/tigervnc/files/stable/1.11.0/tigervnc-1.11.0.x86_64.tar.gz | tar --strip-components 1 -xzvf -
 
 COPY --from=novnc /novnc /opt/novnc
 COPY .rosbox/xserver/index.html /opt/novnc
@@ -105,7 +119,9 @@ RUN git clone --depth 1 https://github.com/b4b4r07/enhancd.git /opt/enhancd && \
 
 # Theia IDE
 ENV THEIA_PREFIX /opt/theia
-COPY .rosbox/theia/package.json ${THEIA_PREFIX}/package.json 
+
+COPY .rosbox/theia/package.json ${THEIA_PREFIX}/package.json
+
 RUN yarn --cwd ${THEIA_PREFIX} --cache-folder ./ycache && rm -rf ${THEIA_PREFIX}/ycache && \
     NODE_OPTIONS="--max_old_space_size=4096" yarn --cwd ${THEIA_PREFIX} theia build && \
     yarn --cwd ${THEIA_PREFIX} theia download:plugins && \
@@ -116,6 +132,7 @@ RUN yarn --cwd ${THEIA_PREFIX} --cache-folder ./ycache && rm -rf ${THEIA_PREFIX}
     echo *.spec.* >> ${THEIA_PREFIX}/.yarnclean && \
     yarn --cwd ${THEIA_PREFIX} autoclean --force && \
     yarn --cwd ${THEIA_PREFIX} cache clean
+
 COPY .rosbox/theia/plugins/auchenberg.vscode-browser-preview-0.7.1.vsix ${THEIA_PREFIX}/plugins/auchenberg.vscode-browser-preview-0.7.1.vsix
 COPY .rosbox/theia/plugins/ms-iot.vscode-ros-0.6.7.vsix ${THEIA_PREFIX}/plugins/ms-iot.vscode-ros-0.6.7.vsix
 
